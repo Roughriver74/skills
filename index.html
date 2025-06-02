@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Радар-график навыков</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 40px;
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .chart-container {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+        
+        .chart-wrapper {
+            flex: 1;
+            min-width: 300px;
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .chart-wrapper:hover {
+            transform: translateY(-5px);
+        }
+        
+        .chart-title {
+            text-align: center;
+            font-size: 1.4em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+        
+        .summary-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 40px;
+        }
+        
+        .summary-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .summary-card:hover {
+            transform: translateY(-3px);
+        }
+        
+        .summary-card h3 {
+            color: #2c3e50;
+            border-bottom: 3px solid;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .strengths h3 {
+            border-color: #27ae60;
+            color: #27ae60;
+        }
+        
+        .growth-areas h3 {
+            border-color: #e74c3c;
+            color: #e74c3c;
+        }
+        
+        .skill-item {
+            margin-bottom: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
+        }
+        
+        .skill-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .skill-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .skill-description {
+            font-size: 0.9em;
+            color: #666;
+            line-height: 1.4;
+        }
+        
+        .skill-score {
+            display: inline-block;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        .toggle-container {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .toggle-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 1em;
+            cursor: pointer;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .toggle-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        .toggle-btn.active {
+            background: linear-gradient(45deg, #27ae60, #2ecc71);
+        }
+        
+        @media (max-width: 768px) {
+            .chart-container {
+                flex-direction: column;
+            }
+            
+            .summary-section {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Радар-график профессиональных навыков</h1>
+        
+        <div class="toggle-container">
+            <button class="toggle-btn active" onclick="showChart('hard')">Хард-скиллы</button>
+            <button class="toggle-btn" onclick="showChart('soft')">Софт-скиллы</button>
+            <button class="toggle-btn" onclick="showChart('combined')">Объединенный</button>
+        </div>
+        
+        <div class="chart-container">
+            <div class="chart-wrapper" id="hardSkillsChart">
+                <div class="chart-title">Технические навыки (Хард-скиллы)</div>
+                <canvas id="hardChart" width="400" height="400"></canvas>
+            </div>
+            
+            <div class="chart-wrapper" id="softSkillsChart" style="display: none;">
+                <div class="chart-title">Гибкие навыки (Софт-скиллы)</div>
+                <canvas id="softChart" width="400" height="400"></canvas>
+            </div>
+            
+            <div class="chart-wrapper" id="combinedSkillsChart" style="display: none;">
+                <div class="chart-title">Все навыки</div>
+                <canvas id="combinedChart" width="400" height="400"></canvas>
+            </div>
+        </div>
+        
+        <div class="summary-section">
+            <div class="summary-card strengths">
+                <h3>🚀 Сильные стороны</h3>
+                <div class="skill-item">
+                    <div class="skill-name">Автоматизация бизнес-процессов <span class="skill-score">10/10</span></div>
+                    <div class="skill-description">Отличное владение Bitrix24, чтение BPMN диаграмм</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-name">Решение проблем <span class="skill-score">9/10</span></div>
+                    <div class="skill-description">Быстрое принятие решений и глубокое погружение в задачи</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-name">Взаимодействие с бизнесом <span class="skill-score">8/10</span></div>
+                    <div class="skill-description">Понимание потребностей бизнеса и общение на их языке</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-name">Разработка приложений с ИИ <span class="skill-score">8/10</span></div>
+                    <div class="skill-description">Успешная разработка приложения цифровой активности</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-name">Анализ данных <span class="skill-score">7/10</span></div>
+                    <div class="skill-description">Power BI, SQL, работа с данными из 1C</div>
+                </div>
+            </div>
+            
+            <div class="summary-card growth-areas">
+                <h3>📈 Зоны роста</h3>
+                <div class="skill-item">
+                    <div class="skill-name">Тайм-менеджмент <span class="skill-score">4/10</span></div>
+                    <div class="skill-description">Сложности с оценкой времени и концентрацией</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-name">Устойчивость к давлению <span class="skill-score">3/10</span></div>
+                    <div class="skill-description">Нехватка выносливости в стрессовых ситуациях</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-name">Программирование <span class="skill-score">3/10</span></div>
+                    <div class="skill-description">Начальный уровень Python/PHP, нужно изучение новых технологий</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-name">ITIL <span class="skill-score">4/10</span></div>
+                    <div class="skill-description">Начальное понимание, нужно изучение процессов</div>
+                </div>
+                <div class="skill-item">
+                    <div class="skill-name">Планирование и приоритизация <span class="skill-score">5/10</span></div>
+                    <div class="skill-description">Трудности при большом количестве задач</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Данные для хард-скиллов
+        const hardSkillsData = {
+            labels: [
+                'Автоматизация БП',
+                'Анализ данных',
+                'Методологии IT',
+                'ITIL',
+                'Программирование',
+                'IT-инфраструктура',
+                'Тех. документация',
+                'Разработка с ИИ'
+            ],
+            datasets: [{
+                label: 'Хард-скиллы',
+                data: [10, 7, 6, 4, 3, 4, 6, 8],
+                backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                borderColor: 'rgba(102, 126, 234, 1)',
+                borderWidth: 3,
+                pointBackgroundColor: 'rgba(102, 126, 234, 1)',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 6
+            }]
+        };
+
+        // Данные для софт-скиллов
+        const softSkillsData = {
+            labels: [
+                'Работа в команде',
+                'Делегирование',
+                'Планирование',
+                'Понимание бизнеса',
+                'Презентации',
+                'Решение проблем',
+                'Тайм-менеджмент',
+                'Устойчивость'
+            ],
+            datasets: [{
+                label: 'Софт-скиллы',
+                data: [7, 7, 5, 8, 7, 9, 4, 3],
+                backgroundColor: 'rgba(118, 75, 162, 0.2)',
+                borderColor: 'rgba(118, 75, 162, 1)',
+                borderWidth: 3,
+                pointBackgroundColor: 'rgba(118, 75, 162, 1)',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 6
+            }]
+        };
+
+        // Объединенные данные
+        const combinedData = {
+            labels: [
+                'Автоматизация БП', 'Анализ данных', 'Методологии IT', 'ITIL',
+                'Программирование', 'IT-инфраструктура', 'Тех. документация', 'Разработка с ИИ',
+                'Работа в команде', 'Делегирование', 'Планирование', 'Понимание бизнеса',
+                'Презентации', 'Решение проблем', 'Тайм-менеджмент', 'Устойчивость'
+            ],
+            datasets: [
+                {
+                    label: 'Хард-скиллы',
+                    data: [10, 7, 6, 4, 3, 4, 6, 8, null, null, null, null, null, null, null, null],
+                    backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                    borderColor: 'rgba(102, 126, 234, 1)',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'rgba(102, 126, 234, 1)',
+                    pointRadius: 4
+                },
+                {
+                    label: 'Софт-скиллы',
+                    data: [null, null, null, null, null, null, null, null, 7, 7, 5, 8, 7, 9, 4, 3],
+                    backgroundColor: 'rgba(118, 75, 162, 0.2)',
+                    borderColor: 'rgba(118, 75, 162, 1)',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'rgba(118, 75, 162, 1)',
+                    pointRadius: 4
+                }
+            ]
+        };
+
+        const chartOptions = {
+            type: 'radar',
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                    r: {
+                        angleLines: {
+                            display: true,
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        },
+                        pointLabels: {
+                            font: {
+                                size: 12,
+                                weight: 'bold'
+                            },
+                            color: '#2c3e50'
+                        },
+                        ticks: {
+                            beginAtZero: true,
+                            max: 10,
+                            stepSize: 2,
+                            showLabelBackdrop: false,
+                            color: '#666'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            padding: 20,
+                            usePointStyle: true
+                        }
+                    }
+                },
+                animation: {
+                    duration: 1500,
+                    easing: 'easeInOutQuart'
+                }
+            }
+        };
+
+        // Создание графиков
+        const hardChart = new Chart(
+            document.getElementById('hardChart'),
+            {
+                ...chartOptions,
+                data: hardSkillsData
+            }
+        );
+
+        const softChart = new Chart(
+            document.getElementById('softChart'),
+            {
+                ...chartOptions,
+                data: softSkillsData
+            }
+        );
+
+        const combinedChart = new Chart(
+            document.getElementById('combinedChart'),
+            {
+                ...chartOptions,
+                data: combinedData
+            }
+        );
+
+        // Функция переключения графиков
+        function showChart(type) {
+            // Скрыть все графики
+            document.getElementById('hardSkillsChart').style.display = 'none';
+            document.getElementById('softSkillsChart').style.display = 'none';
+            document.getElementById('combinedSkillsChart').style.display = 'none';
+            
+            // Убрать активный класс у всех кнопок
+            document.querySelectorAll('.toggle-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Показать выбранный график и активировать кнопку
+            if (type === 'hard') {
+                document.getElementById('hardSkillsChart').style.display = 'block';
+                document.querySelector('button[onclick="showChart(\'hard\')"]').classList.add('active');
+            } else if (type === 'soft') {
+                document.getElementById('softSkillsChart').style.display = 'block';
+                document.querySelector('button[onclick="showChart(\'soft\')"]').classList.add('active');
+            } else if (type === 'combined') {
+                document.getElementById('combinedSkillsChart').style.display = 'block';
+                document.querySelector('button[onclick="showChart(\'combined\')"]').classList.add('active');
+            }
+        }
+    </script>
+</body>
+</html>
